@@ -1,0 +1,45 @@
+{
+    "Name": "Example1",
+    "Windows": [
+        {
+            "Name": "My Window 1",
+            "Pane": {
+                "Command": "echo \"this is the first pane\"",
+                "Split": [
+                        {
+                        "SplitType": "horizontal",
+                        "Command": "pwd"
+                    },
+                    {
+                        "SplitType": "vertical",
+                        "Command": "watch ls",
+                        "Split": [
+                            {
+                                "SplitType": "horizontal",
+                                "Command": "ls"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "Name": "My Window 2",
+            "Pane": {
+                "Command": "echo \"This is a pane in window 2\"",
+                "Split": [
+                    {
+                        "SplitType": "vertical",
+                        "Command": "vim",
+                        "Split": [
+                            {
+                                "SplitType": "horizontal",
+                                "Command": "ls"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
