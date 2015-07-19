@@ -25,11 +25,17 @@ func main() {
 
 type Session struct {
 	Name    string
+    Directory string
 	Windows []Window
 }
 
 func (s Session) CreateSession(writer io.Writer) {
-	gs := gomux.NewSession(s.Name, writer)
+    var gs *gomux.Session
+    if s.Directory != "" {
+        gs = gomux.NewSessionOnDir(s.Name, s.Directory, writer)
+    }else {
+        gs = gomux.NewSession(s.Name, writer)
+    }
 	for _, w := range s.Windows {
 		w.CreateWindow(gs)
 	}
