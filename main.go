@@ -24,30 +24,34 @@ func main() {
 }
 
 type Session struct {
-	Name    string
-    Directory string
-	Windows []Window
+	Name      string
+	Directory string
+	Windows   []Window
 }
 
 func (s Session) CreateSession(writer io.Writer) {
-    var gs *gomux.Session
-    if s.Directory != "" {
-        gs = gomux.NewSessionOnDir(s.Name, s.Directory, writer)
-    }else {
-        gs = gomux.NewSession(s.Name, writer)
-    }
+	params := gomux.SessionAttr{
+		Name:      s.Name,
+		Directory: s.Directory,
+	}
+	gs := gomux.NewSessionAttr(params, writer)
 	for _, w := range s.Windows {
 		w.CreateWindow(gs)
 	}
 }
 
 type Window struct {
-	Name string
-	Pane *Pane
+	Name      string
+	Pane      *Pane
+	Directory string
 }
 
 func (w Window) CreateWindow(s *gomux.Session) {
-	w1 := s.AddWindow(w.Name)
+	attr := gomux.WindowAttr{
+		Name:      w.Name,
+		Directory: w.Directory,
+	}
+	w1 := s.AddWindowAttr(attr)
 	w1p0 := w1.Pane(0)
 	if w.Pane != nil {
 		w.Pane.pane = w1p0
@@ -59,6 +63,7 @@ func (w Window) CreateWindow(s *gomux.Session) {
 type Pane struct {
 	pane      *gomux.Pane
 	Command   string
+	Directory string
 	SplitType string
 	Split     []*Pane
 }
@@ -69,11 +74,14 @@ func (p Pane) ExecCommand() {
 
 func (p Pane) SplitPane() {
 	for _, split := range p.Split {
+		attr := gomux.SplitAttr{
+			Directory: p.Directory,
+		}
 		if split.SplitType == "horizontal" {
-			split.pane = p.pane.Split()
+			split.pane = p.pane.SplitWAttr(attr)
 		} else {
 			fmt.Println(p.SplitType)
-			split.pane = p.pane.Vsplit()
+			split.pane = p.pane.VsplitWAttr(attr)
 		}
 		split.pane.Exec(split.Command)
 		split.SplitPane()
