@@ -34,6 +34,7 @@ func (s Session) CreateSession(writer io.Writer) {
 		Name:      s.Name,
 		Directory: s.Directory,
 	}
+	gomux.KillSession(s.Name, writer)
 	gs := gomux.NewSessionAttr(params, writer)
 	for _, w := range s.Windows {
 		w.CreateWindow(gs)
