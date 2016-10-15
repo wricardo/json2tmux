@@ -1,10 +1,12 @@
 {
     "Name": "Example1",
+    "Directory": "~",
     "Windows": [
         {
-            "Name": "My Window 1",
+            "Name": "Home Window",
             "Pane": {
                 "Command": "echo \"this is the first pane\"",
+                "Directory": "/etc",
                 "Split": [
                         {
                         "SplitType": "horizontal",
@@ -12,11 +14,12 @@
                     },
                     {
                         "SplitType": "vertical",
+                        "Directory": "/tmp",
                         "Command": "watch ls",
                         "Split": [
                             {
                                 "SplitType": "horizontal",
-                                "Command": "ls"
+                                "Command": "echo watching for changes to /tmp"
                             }
                         ]
                     }
