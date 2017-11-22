@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -81,7 +80,6 @@ func (p Pane) SplitPane() {
 		if split.SplitType == "horizontal" {
 			split.pane = p.pane.SplitWAttr(attr)
 		} else {
-			fmt.Println(p.SplitType)
 			split.pane = p.pane.VsplitWAttr(attr)
 		}
 		split.pane.Exec(split.Command)
