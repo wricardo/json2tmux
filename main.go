@@ -56,11 +56,16 @@ func (w Window) CreateWindow(s *gomux.Session) {
 	w1p0 := w1.Pane(0)
 	if w.Pane != nil {
 		w.Pane.pane = w1p0
+		if w.Pane.Directory != "" {
+			w.Pane.pane.Exec(fmt.Sprintf("cd %s", w.Pane.Directory))
+		}
 		w.Pane.ExecCommand()
 		w.Pane.SplitPane()
 	}
 }
 
+// Pane is whats in a tmux window e.g zero
+// or more spits.
 type Pane struct {
 	pane      *gomux.Pane
 	Command   string
@@ -81,8 +86,10 @@ func (p Pane) SplitPane() {
 		if split.SplitType == "horizontal" {
 			split.pane = p.pane.SplitWAttr(attr)
 		} else {
-			fmt.Println(p.SplitType)
 			split.pane = p.pane.VsplitWAttr(attr)
+		}
+		if split.Directory != "" {
+			split.pane.Exec(fmt.Sprintf("cd %s", split.Directory))
 		}
 		split.pane.Exec(split.Command)
 		split.SplitPane()
