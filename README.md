@@ -26,6 +26,8 @@ go build -o json2tmux .
 json2tmux session.json | bash          # positional file arg
 json2tmux -f session.json | bash       # explicit -f flag
 json2tmux -attach session.json | bash  # launch + attach in one step
+json2tmux -exec session.json           # execute directly, no pipe needed
+json2tmux -exec -attach session.json   # execute + attach in one command
 cat session.json | json2tmux | bash    # stdin
 ```
 

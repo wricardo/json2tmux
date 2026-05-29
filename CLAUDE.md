@@ -34,8 +34,9 @@ Depends on `github.com/wricardo/gomux` — a thin wrapper that writes tmux shell
 ## CLI flags
 
 - Positional arg or `-f <file>`: read session JSON from file instead of stdin
-- `-attach`: append `tmux attach -t <name>` to output
-- `-dry-run`: accepted flag (no-op; output is always bash)
+- `-exec`: execute tmux commands directly via `bash -s` — no pipe needed
+- `-attach`: append/run `tmux attach -t <name>`
+- `-dry-run`: print bash commands for inspection
 - `--help` / `-h`: print usage and schema reference
 
 ## Documentation rules

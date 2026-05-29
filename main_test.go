@@ -271,3 +271,31 @@ func TestAttachFlag(t *testing.T) {
 		t.Errorf("expected attach command, got:\n%s", out)
 	}
 }
+
+func TestRunBash_Success(t *testing.T) {
+	if err := runBash("echo hello"); err != nil {
+		t.Errorf("runBash failed on valid script: %v", err)
+	}
+}
+
+func TestRunBash_Failure(t *testing.T) {
+	if err := runBash("exit 1"); err == nil {
+		t.Error("expected error for failing script, got nil")
+	}
+}
+
+func TestRunBash_MultiLine(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "out.txt")
+	script := fmt.Sprintf("echo line1 > %s\necho line2 >> %s\n", tmp, tmp)
+	if err := runBash(script); err != nil {
+		t.Fatalf("runBash failed: %v", err)
+	}
+	data, err := os.ReadFile(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := string(data)
+	if !strings.Contains(out, "line1") || !strings.Contains(out, "line2") {
+		t.Errorf("unexpected file contents: %s", out)
+	}
+}

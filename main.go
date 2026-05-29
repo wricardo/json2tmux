@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/wricardo/gomux"
 )
@@ -19,8 +21,9 @@ Usage:
 
 Flags:
   -f <file>   Session JSON file (alternative to positional arg or stdin)
-  -attach     Append 'tmux attach -t <name>' to output
-  -dry-run    Print bash commands without a trailing newline marker; useful for inspection
+  -attach     Append 'tmux attach -t <name>' to output (or attach directly with -exec)
+  -exec       Execute tmux commands directly instead of printing bash
+  -dry-run    Print bash commands for inspection without executing
   -h, --help  Print this help
 
 JSON schema:
@@ -42,22 +45,25 @@ JSON schema:
   }
 
 Notes:
-  - Output is bash commands; pipe to bash to execute.
+  - Default output is bash commands; pipe to bash to execute.
+  - With -exec, commands run directly — no pipe required.
   - Existing session with same Name is killed before creation.
   - Panes are split depth-first.
 
 Examples:
   json2tmux session.json | bash
+  json2tmux -exec session.json
+  json2tmux -exec -attach session.json
   json2tmux -f session.json | bash
-  json2tmux -attach session.json | bash
-  cat session.json | json2tmux | bash
+  cat session.json | json2tmux -exec
 `
 
 func main() {
 	var (
-		fileFlag  = flag.String("f", "", "session JSON file")
-		attach    = flag.Bool("attach", false, "append 'tmux attach -t <name>' to output")
-		dryRun    = flag.Bool("dry-run", false, "print bash commands only, do not execute")
+		fileFlag = flag.String("f", "", "session JSON file")
+		attach   = flag.Bool("attach", false, "append or run 'tmux attach -t <name>'")
+		execFlag = flag.Bool("exec", false, "execute tmux commands directly via bash")
+		dryRun   = flag.Bool("dry-run", false, "print bash commands without executing")
 	)
 
 	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
@@ -95,14 +101,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	w := os.Stdout
-	s.CreateSession(w)
-
+	// always build the bash script into a buffer
+	var buf bytes.Buffer
+	s.CreateSession(&buf)
 	if *attach {
-		fmt.Fprintf(w, "tmux attach -t %q\n", s.Name)
+		fmt.Fprintf(&buf, "tmux attach -t %q\n", s.Name)
 	}
 
-	_ = dryRun // output is always just bash commands; --dry-run documents intent for callers
+	switch {
+	case *execFlag:
+		if err := runBash(buf.String()); err != nil {
+			log.Fatalf("exec error: %v", err)
+		}
+	case *dryRun:
+		fmt.Print(buf.String())
+	default:
+		fmt.Print(buf.String())
+	}
+}
+
+// runBash pipes the script to `bash -s`, connecting stdio so tmux attach works.
+func runBash(script string) error {
+	cmd := exec.Command("bash", "-s")
+	cmd.Stdin = bytes.NewBufferString(script)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 type Session struct {
