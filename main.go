@@ -11,13 +11,51 @@ import (
 	"github.com/wricardo/gomux"
 )
 
+const usage = `json2tmux — create tmux sessions from JSON
+
+Usage:
+  cat session.json | json2tmux | bash
+
+JSON schema:
+  {
+    "Name":      string,           // tmux session name (required)
+    "Directory": string,           // working directory for the session
+    "Windows": [
+      {
+        "Name":      string,       // tmux window name
+        "Directory": string,       // working directory for the window
+        "Pane": {
+          "Command":   string,     // command to run in this pane
+          "Directory": string,     // working directory for child splits
+          "SplitType": string,     // "horizontal" or "vertical" (default)
+          "Split":     [<Pane>]    // recursive child panes
+        }
+      }
+    ]
+  }
+
+Notes:
+  - Output is bash commands; pipe to bash to execute.
+  - Existing session with same Name is killed before creation.
+  - Panes are split depth-first.
+`
+
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "--help" || os.Args[1] == "-h") {
+		fmt.Fprint(os.Stderr, usage)
+		os.Exit(0)
+	}
+
 	bytes, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var s Session
 	err = json.Unmarshal(bytes, &s)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "error: invalid JSON: %v\n\nRun with --help for usage.\n", err)
+		os.Exit(1)
 	}
 
 	s.CreateSession(os.Stdout)
