@@ -1,0 +1,40 @@
+{
+  "Name": "dev",
+  "Directory": "~/project",
+  "Windows": [
+    {
+      "Name": "claude",
+      "Directory": "~/project",
+      "Pane": {
+        "Command": "claude",
+        "SplitType": "vertical",
+        "Split": [
+          {
+            "Command": "git log --oneline -10",
+            "Directory": "~/project"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "server",
+      "Directory": "~/project",
+      "Pane": {
+        "Command": "go run .",
+        "SplitType": "vertical",
+        "Split": [
+          {
+            "Command": "go test ./... -v -watch"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "shell",
+      "Directory": "~/project",
+      "Pane": {
+        "Command": ""
+      }
+    }
+  ]
+}
