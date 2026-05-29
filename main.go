@@ -15,47 +15,67 @@ import (
 
 const usage = `json2tmux — create tmux sessions from JSON
 
-Usage:
+USAGE
   json2tmux [flags] [file]
   cat session.json | json2tmux [flags]
+  Input priority: -f flag > positional arg > stdin
 
-Flags:
-  -f <file>   Session JSON file (alternative to positional arg or stdin)
-  -attach     Append 'tmux attach -t <name>' to output (or attach directly with -exec)
-  -exec       Execute tmux commands directly instead of printing bash
-  -dry-run    Print bash commands for inspection without executing
-  -h, --help  Print this help
+FLAGS
+  -f <file>  Read session JSON from file
+  -exec      Execute via bash directly (no pipe needed)
+  -attach    Also run: tmux attach -t <Name>
+  -dry-run   Print bash commands, do not execute
+  -h         This help
 
-JSON schema:
+SCHEMA
   {
-    "Name":      string,           // tmux session name (required)
-    "Directory": string,           // working directory for the session
-    "Windows": [
-      {
-        "Name":      string,       // tmux window name
-        "Directory": string,       // working directory for the window
-        "Pane": {
-          "Command":   string,     // command to run in this pane
-          "Directory": string,     // working directory for child splits
-          "SplitType": string,     // "horizontal" or "vertical" (default)
-          "Split":     [<Pane>]    // recursive child panes
-        }
-      }
-    ]
+    "Name":      string,     // session name; existing session killed+recreated
+    "Directory": string,     // default working dir for session
+    "Windows": [{
+      "Name":      string,   // window name
+      "Directory": string,   // override working dir for this window
+      "Pane": <Pane>
+    }]
   }
 
-Notes:
-  - Default output is bash commands; pipe to bash to execute.
-  - With -exec, commands run directly — no pipe required.
-  - Existing session with same Name is killed before creation.
-  - Panes are split depth-first.
+  Pane {
+    "Command":   string,     // shell command to run in pane
+    "Directory": string,     // cd here before child splits (quoted, handles spaces)
+    "SplitType": string,     // "horizontal"=left/right  "vertical"=top/bottom (default)
+    "Split":     [<Pane>]    // child panes; recursive, depth-first
+  }
 
-Examples:
-  json2tmux session.json | bash
-  json2tmux -exec session.json
-  json2tmux -exec -attach session.json
-  json2tmux -f session.json | bash
-  cat session.json | json2tmux -exec
+BEHAVIOR
+  - Output is bash commands (tmux CLI calls); safe to inspect before running
+  - Session kill+recreate is idempotent — run anytime to reset layout
+  - Pane.Directory applies cd before each child split, not the root pane
+  - Window.Directory sets the window working dir via tmux WindowAttr
+  - SplitType default (any value except "horizontal") = vertical
+
+EXAMPLES
+  json2tmux dev.json | bash                   # pipe to bash
+  json2tmux -exec dev.json                    # execute directly
+  json2tmux -exec -attach dev.json            # execute + attach (one command)
+  json2tmux -dry-run dev.json                 # inspect commands
+  json2tmux -f dev.json | bash                # explicit -f flag
+  cat dev.json | json2tmux -exec              # stdin + exec
+
+SSH FLEET
+  Set "Command" to an ssh invocation per pane:
+  { "Command": "ssh user@host", "SplitType": "horizontal", "Split": [...] }
+
+REMOTE BOOTSTRAP
+  scp session.json user@host:~
+  ssh user@host 'json2tmux -exec session.json'
+  ssh -t user@host 'tmux attach -t <Name>'
+
+CLAUDE CODE
+  Ask Claude to generate a session file:
+    "Create a json2tmux session: vim + go run side by side, second window idle shell"
+  Ask Claude to launch it (requires tmux MCP server):
+    "Run examples/dev.json through json2tmux -exec -attach"
+  Add to CLAUDE.md for auto-restore:
+    json2tmux -exec -attach examples/dev.json
 `
 
 func main() {
