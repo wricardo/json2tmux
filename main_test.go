@@ -2,6 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -202,5 +206,68 @@ func TestCreateSession_MultipleWindows(t *testing.T) {
 		if !strings.Contains(out, name) {
 			t.Errorf("expected %q in output, got:\n%s", name, out)
 		}
+	}
+}
+
+// helpers
+
+func writeSessionFile(t *testing.T, s Session) string {
+	t.Helper()
+	data, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := filepath.Join(t.TempDir(), "session.json")
+	if err := os.WriteFile(f, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
+func sessionWithCommand(name, cmd string) Session {
+	return Session{
+		Name:    name,
+		Windows: []Window{{Name: "w", Pane: &Pane{Command: cmd}}},
+	}
+}
+
+// flag / input tests
+
+func TestReadFromFile_PositionalArg(t *testing.T) {
+	path := writeSessionFile(t, sessionWithCommand("filesession", "echo positional"))
+
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	data, _ := os.ReadFile(path)
+	var s Session
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	s.CreateSession(&buf)
+	out := buf.String()
+
+	if !strings.Contains(out, "filesession") {
+		t.Errorf("expected session name in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "echo positional") {
+		t.Errorf("expected command in output, got:\n%s", out)
+	}
+}
+
+func TestAttachFlag(t *testing.T) {
+	var buf bytes.Buffer
+	s := sessionWithCommand("attachsession", "vim")
+	s.CreateSession(&buf)
+	fmt.Fprintf(&buf, "tmux attach -t %q\n", s.Name)
+	out := buf.String()
+
+	if !strings.Contains(out, `tmux attach -t "attachsession"`) {
+		t.Errorf("expected attach command, got:\n%s", out)
 	}
 }

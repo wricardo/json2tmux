@@ -2,21 +2,27 @@
 
 ## What does json2tmux do?
 
-Reads a JSON session descriptor from stdin, outputs bash commands that create a tmux session. Pipe the output to `bash` to execute.
+Reads a JSON session descriptor (file arg, `-f` flag, or stdin), outputs bash commands that create a tmux session. Pipe the output to `bash` to execute.
 
 ## How do I run it?
 
 ```bash
-cat examples/example1.json | go run . | bash
+json2tmux examples/example1.json | bash   # file arg (simplest)
+json2tmux -f examples/example1.json | bash
+json2tmux -attach examples/example1.json | bash  # launch + attach
+cat examples/example1.json | json2tmux | bash     # stdin
 tmux attach -t Example1
 ```
 
-Or build first:
+## What flags are available?
 
-```bash
-go build .
-cat examples/example1.json | ./json2tmux | bash
-```
+| Flag | Description |
+|------|-------------|
+| `<file>` | Positional file argument — reads JSON from file |
+| `-f <file>` | Explicit file flag — same as positional arg |
+| `-attach` | Appends `tmux attach -t <name>` to output |
+| `-dry-run` | Accepted flag; output is always bash commands |
+| `-h`, `--help` | Print usage and full schema reference |
 
 ## What does the JSON structure look like?
 
