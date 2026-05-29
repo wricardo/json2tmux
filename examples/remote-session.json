@@ -1,0 +1,36 @@
+{
+  "Name": "remote-dev",
+  "Directory": "~/project",
+  "Windows": [
+    {
+      "Name": "editor",
+      "Pane": {
+        "Command": "vim .",
+        "SplitType": "vertical",
+        "Split": [
+          {
+            "Command": "make watch"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "logs",
+      "Pane": {
+        "Command": "journalctl -fu myapp",
+        "SplitType": "horizontal",
+        "Split": [
+          {
+            "Command": "tail -f /var/log/nginx/access.log"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "shell",
+      "Pane": {
+        "Command": ""
+      }
+    }
+  ]
+}

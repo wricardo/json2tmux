@@ -1,0 +1,54 @@
+{
+  "Name": "fleet",
+  "Directory": "~",
+  "Windows": [
+    {
+      "Name": "web",
+      "Pane": {
+        "Command": "ssh web-01.prod.example.com",
+        "SplitType": "horizontal",
+        "Split": [
+          {
+            "Command": "ssh web-02.prod.example.com"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "db",
+      "Pane": {
+        "Command": "ssh db-primary.prod.example.com",
+        "SplitType": "horizontal",
+        "Split": [
+          {
+            "Command": "ssh db-replica.prod.example.com"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "workers",
+      "Pane": {
+        "Command": "ssh worker-01.prod.example.com",
+        "SplitType": "vertical",
+        "Split": [
+          {
+            "Command": "ssh worker-02.prod.example.com",
+            "SplitType": "horizontal",
+            "Split": [
+              {
+                "Command": "ssh worker-03.prod.example.com"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Name": "monitor",
+      "Pane": {
+        "Command": "ssh -t bastion.prod.example.com 'htop'"
+      }
+    }
+  ]
+}

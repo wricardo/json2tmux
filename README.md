@@ -74,6 +74,72 @@ tmux attach -t Example1
 
 Run `json2tmux --help` to print schema reference.
 
+## SSH Fleets
+
+Open SSH connections to multiple servers in one shot. Each pane gets its own connection — useful for monitoring a cluster, running parallel deploys, or keeping prod shells organized.
+
+```json
+{
+  "Name": "fleet",
+  "Windows": [
+    {
+      "Name": "web",
+      "Pane": {
+        "Command": "ssh web-01.prod.example.com",
+        "SplitType": "horizontal",
+        "Split": [{ "Command": "ssh web-02.prod.example.com" }]
+      }
+    },
+    {
+      "Name": "db",
+      "Pane": {
+        "Command": "ssh db-primary.prod.example.com",
+        "SplitType": "horizontal",
+        "Split": [{ "Command": "ssh db-replica.prod.example.com" }]
+      }
+    }
+  ]
+}
+```
+
+```bash
+cat examples/ssh-fleet.json | json2tmux | bash
+tmux attach -t fleet
+```
+
+See [`examples/ssh-fleet.json`](examples/ssh-fleet.json) for a full 4-window fleet example (web, db, workers, monitor).
+
+### Remote server sessions
+
+Bootstrap a dev session on a remote server over SSH. Copy the JSON, SSH in, and pipe it through json2tmux on the remote side:
+
+```bash
+# Copy session file to remote, then bootstrap
+scp examples/remote-session.json user@server:~
+ssh user@server 'cat remote-session.json | json2tmux | bash && tmux attach -t remote-dev'
+```
+
+Or pipe in one step without copying:
+
+```bash
+ssh user@server "$(cat examples/remote-session.json | json2tmux)"
+tmux -S /tmp/tmux-remote attach -t remote-dev
+```
+
+Or use tmux's own remote attach after bootstrapping:
+
+```bash
+# Bootstrap on remote
+ssh user@server 'json2tmux < remote-session.json | bash'
+
+# Attach from local via SSH
+ssh -t user@server 'tmux attach -t remote-dev'
+```
+
+The session definition lives in version control — everyone on the team gets the same remote layout.
+
+See [`examples/remote-session.json`](examples/remote-session.json) for an editor + logs + shell layout.
+
 ## Using with Claude Code
 
 json2tmux pairs well with [Claude Code](https://claude.ai/code). You can commit a session JSON to your repo and have Claude launch a reproducible dev environment — or instruct Claude to create and interact with panes directly.
@@ -137,7 +203,9 @@ Describe your layout and ask Claude to produce the JSON:
 
 > "Create a json2tmux session for this Go project: one window with vim on the left and `go run .` on the right, a second window for git, a third window idle shell."
 
-Claude will emit a ready-to-use JSON file based on your repo structure.
+> "Create an SSH fleet session for web-01 through web-04, db-primary and db-replica, side by side."
+
+Claude will emit a ready-to-use JSON file. For SSH fleets, give it your host naming convention and it will generate the full layout.
 
 ### CLAUDE.md tip
 
