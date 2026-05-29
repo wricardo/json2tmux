@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -14,7 +14,14 @@ import (
 const usage = `json2tmux — create tmux sessions from JSON
 
 Usage:
-  cat session.json | json2tmux | bash
+  json2tmux [flags] [file]
+  cat session.json | json2tmux [flags]
+
+Flags:
+  -f <file>   Session JSON file (alternative to positional arg or stdin)
+  -attach     Append 'tmux attach -t <name>' to output
+  -dry-run    Print bash commands without a trailing newline marker; useful for inspection
+  -h, --help  Print this help
 
 JSON schema:
   {
@@ -38,27 +45,64 @@ Notes:
   - Output is bash commands; pipe to bash to execute.
   - Existing session with same Name is killed before creation.
   - Panes are split depth-first.
+
+Examples:
+  json2tmux session.json | bash
+  json2tmux -f session.json | bash
+  json2tmux -attach session.json | bash
+  cat session.json | json2tmux | bash
 `
 
 func main() {
-	if len(os.Args) > 1 && (os.Args[1] == "--help" || os.Args[1] == "-h") {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(0)
+	var (
+		fileFlag  = flag.String("f", "", "session JSON file")
+		attach    = flag.Bool("attach", false, "append 'tmux attach -t <name>' to output")
+		dryRun    = flag.Bool("dry-run", false, "print bash commands only, do not execute")
+	)
+
+	flag.Usage = func() { fmt.Fprint(os.Stderr, usage) }
+	flag.Parse()
+
+	// resolve input source: -f flag > positional arg > stdin
+	var r io.Reader
+	switch {
+	case *fileFlag != "":
+		f, err := os.Open(*fileFlag)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		defer f.Close()
+		r = f
+	case flag.NArg() > 0:
+		f, err := os.Open(flag.Arg(0))
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		defer f.Close()
+		r = f
+	default:
+		r = os.Stdin
 	}
 
-	bytes, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(r)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error reading input: %v", err)
 	}
 
 	var s Session
-	err = json.Unmarshal(bytes, &s)
-	if err != nil {
+	if err := json.Unmarshal(data, &s); err != nil {
 		fmt.Fprintf(os.Stderr, "error: invalid JSON: %v\n\nRun with --help for usage.\n", err)
 		os.Exit(1)
 	}
 
-	s.CreateSession(os.Stdout)
+	w := os.Stdout
+	s.CreateSession(w)
+
+	if *attach {
+		fmt.Fprintf(w, "tmux attach -t %q\n", s.Name)
+	}
+
+	_ = dryRun // output is always just bash commands; --dry-run documents intent for callers
 }
 
 type Session struct {

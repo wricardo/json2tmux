@@ -23,8 +23,10 @@ go build -o json2tmux .
 ## Usage
 
 ```bash
-cat session.json | json2tmux | bash
-tmux attach -t MySession
+json2tmux session.json | bash          # positional file arg
+json2tmux -f session.json | bash       # explicit -f flag
+json2tmux -attach session.json | bash  # launch + attach in one step
+cat session.json | json2tmux | bash    # stdin
 ```
 
 Run `json2tmux --help` to print the full schema reference.
